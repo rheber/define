@@ -5,12 +5,32 @@ from urllib.request import urlopen
 URL = "http://dictionary.reference.com/browse/{word}?s=t"
 DEFINITION_CLASS = "def-content"
 
-
-
 class GlossParser(HTMLParser):
+    def __init__(self):
+        self.strict = False
+        self.reset()
+        self.depth = 0
+        self.gloss_start = False
+        self.glosses = []
+        
     def handle_starttag(self, tag, attrs):
         if ("class", DEFINITION_CLASS) in attrs:
-            print(self.get_starttag_text())
+            self.depth += 1
+            self.gloss_start = True
+        elif self.depth:
+            self.depth += 1
+            
+    def handle_endtag(self, tag):
+        if self.depth:
+            self.depth -= 1
+            
+    def handle_data(self, data):
+        if self.depth:
+            if self.gloss_start:
+                self.glosses.append(data)
+                self.gloss_start = False
+            else:
+                self.glosses[-1] += data
 
 
 def glosses(word):
