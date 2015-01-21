@@ -1,7 +1,7 @@
 from contextlib import closing
 from html.parser import HTMLParser
 import shelve
-from sys import stderr
+from sys import argv, stderr
 from urllib.request import urlopen, URLError
 
 URL = "http://dictionary.reference.com/browse/{word}?s=t"
@@ -55,7 +55,8 @@ def print_glosses(glosses):
         print("Not defined.")
         return
     for (n, gloss) in enumerate(glosses):
-        print("{num}. {gloss}\n".format(num=n, gloss=gloss))
+        print("{num}. {gloss}\n".format(num=n,
+                gloss=gloss.encode(errors='replace')))
 
 def define(word, override=False):
     """Print the definitions of a word, fetching them if necessary."""
@@ -64,3 +65,9 @@ def define(word, override=False):
         if word not in glossary or override:
             glossary[word] = glosses(word)
         print_glosses(glossary[word])
+
+if __name__ == "__main__":
+    if len(argv) < 2:
+        print("Error: Missing argument", file=stderr)
+    else:
+        define(argv[-1])
