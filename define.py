@@ -1,4 +1,6 @@
+from contextlib import closing
 from html.parser import HTMLParser
+import shelve
 from sys import stderr
 from urllib.request import urlopen, URLError
 
@@ -54,3 +56,11 @@ def print_glosses(glosses):
         return
     for (n, gloss) in enumerate(glosses):
         print("{num}. {gloss}\n".format(num=n, gloss=gloss))
+
+def define(word, override=False):
+    """Print the definitions of a word, fetching them if necessary."""
+    
+    with closing(shelve.open("glossary")) as glossary:
+        if word not in glossary or override:
+            glossary[word] = glosses(word)
+        print_glosses(glossary[word])
