@@ -1,11 +1,17 @@
 from contextlib import closing
 from html.parser import HTMLParser
 import shelve
-from sys import argv, stderr
+import sys
 from urllib.request import urlopen, URLError
 
 URL = "http://dictionary.reference.com/browse/{word}?s=t"
 DEFINITION_CLASS = "def-content"
+
+def fatal_error(msg):
+    """"Print error message and exit."""
+
+    print(msg, file=sys.stderr)
+    exit(1)
 
 class GlossParser(HTMLParser):
     def __init__(self):
@@ -44,9 +50,9 @@ def glosses(word):
         parser.feed(page)
         return parser.glosses
     except URLError:
-        print("Error: Couldn't access site", file=stderr)
+        fatal_error("Error: Couldn't access site")
     except UnicodeEncodeError:
-        print("Error: Can't look that up", file=stderr)
+        fatal_error("Error: Can't look that up")
 
 def print_glosses(glosses):
     """Print a list of definitions in a nice format."""
@@ -67,7 +73,7 @@ def define(word, override=False):
         print_glosses(glossary[word])
 
 if __name__ == "__main__":
-    if len(argv) < 2:
-        print("Error: Missing argument", file=stderr)
+    if len(sys.argv) < 2:
+        fatal_error("Error: Missing argument")
     else:
-        define(argv[-1])
+        define(sys.argv[-1])
