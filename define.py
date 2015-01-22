@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 from contextlib import closing
 from html.parser import HTMLParser
 import shelve
@@ -73,7 +74,10 @@ def define(word, override=False):
         print_glosses(glossary[word])
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        fatal_error("Error: Missing argument")
-    else:
-        define(sys.argv[-1])
+##    if len(sys.argv) < 2:
+##        fatal_error("Error: Missing argument")
+##    else:
+##        define(sys.argv[-1])
+    parser = ArgumentParser()
+    parser.add_argument("word", help="the word to be defined")
+    parser.parse_args()
