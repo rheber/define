@@ -77,6 +77,11 @@ class DefineAction(Action):
     def __call__(self, parser, namespace, values, option_string):
         define(values)
 
+class OverrideAction(Action):
+    def __call__(self, parser, namespace, values, option_string):
+        define(values, override=True)
+        sys.exit()
+
 class KeysAction(Action):
     def __call__(self, parser, namespace, values, option_string):
         with closing(shelve.open("glossary")) as glossary:
@@ -101,6 +106,8 @@ if __name__ == "__main__":
     parser.add_argument("-l", "--lexemes",
                         help="list all stored keys which have definitions",
                         action=LexemesAction, nargs=0)
+    parser.add_argument("-o", "--override", help="override stored definitions",
+                        action=OverrideAction)
     parser.add_argument("-v", "--version", action="version",
                         version="define v0.1")
     args = parser.parse_args()
