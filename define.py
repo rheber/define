@@ -1,4 +1,4 @@
-from argparse import ArgumentParser
+from argparse import Action, ArgumentParser
 from contextlib import closing
 from html.parser import HTMLParser
 import shelve
@@ -73,11 +73,24 @@ def define(word, override=False):
             glossary[word] = glosses(word)
         print_glosses(glossary[word])
 
+class DefineAction(Action):
+    def __call__(self, parser, namespace, values, option_string):
+        define(values)
+
+class KeyAction(Action):
+    def __call__(self, parser, namespace, values, option_string):
+        with closing(shelve.open("glossary")) as glossary:
+            for key in sorted(glossary):
+                print(key)
+        sys.exit()
+
 if __name__ == "__main__":
-##    if len(sys.argv) < 2:
-##        fatal_error("Error: Missing argument")
-##    else:
-##        define(sys.argv[-1])
-    parser = ArgumentParser()
-    parser.add_argument("word", help="the word to be defined")
-    parser.parse_args()
+    parser = ArgumentParser(description="Look up the meanings of a word")
+    parser.add_argument("word", help="the word to be defined",
+                        action=DefineAction)
+    parser.add_argument("-k", "--keys", help="list all the stored keys",
+                        action=KeyAction, nargs=0)
+    parser.add_argument("-v", "--version", action="version",
+                        version="define v0.1")
+    args = parser.parse_args()
+    
