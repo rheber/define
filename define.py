@@ -93,7 +93,7 @@ class LexemesAction(Action):
     def __call__(self, parser, namespace, values, option_string):
         with closing(shelve.open("glossary")) as glossary:
             for key in sorted(glossary):
-                if(glossary[key] is not None):
+                if(glossary[key]):
                     print(key)
         sys.exit()
 
