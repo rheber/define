@@ -21,18 +21,18 @@ class GlossParser(HTMLParser):
         self.depth = 0
         self.gloss_start = False
         self.glosses = []
-        
+
     def handle_starttag(self, tag, attrs):
         if ("class", DEFINITION_CLASS) in attrs:
             self.depth += 1
             self.gloss_start = True
         elif self.depth:
             self.depth += 1
-            
+
     def handle_endtag(self, tag):
         if self.depth:
             self.depth -= 1
-            
+
     def handle_data(self, data):
         if self.depth:
             if self.gloss_start:
@@ -67,7 +67,7 @@ def print_glosses(glosses):
 
 def define(word, override=False):
     """Print the definitions of a word, fetching them if necessary."""
-    
+
     with closing(shelve.open("glossary")) as glossary:
         if word not in glossary or override:
             glossary[word] = glosses(word)
@@ -111,4 +111,4 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--version", action="version",
                         version="define v0.1")
     args = parser.parse_args()
-    
+
