@@ -97,10 +97,18 @@ class LexemesAction(Action):
                     print(key)
         sys.exit()
 
+class DeleteAction(Action):
+    def __call__(self, parser, namespace, values, option_string):
+        with closing(shelve.open("glossary")) as glossary:
+            glossary.pop(values, None)
+        sys.exit()
+
 if __name__ == "__main__":
     parser = ArgumentParser(description="Look up the meanings of a word")
     parser.add_argument("word", help="the word to be defined",
                         action=DefineAction)
+    parser.add_argument("-d", "--delete", help="delete the given key if present",
+                        action=DeleteAction)
     parser.add_argument("-k", "--keys", help="list all stored keys",
                         action=KeysAction, nargs=0)
     parser.add_argument("-l", "--lexemes",
