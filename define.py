@@ -42,9 +42,10 @@ class GlossParser(HTMLParser):
                 self.glosses[-1] += data.strip("\n")
 
 def glosses(word):
-    """Return the definitions of a word."""
+    """Fetch the definitions of a word."""
 
     try:
+        print("Fetching definitions...", file=sys.stderr)
         response = urlopen(URL.format(word=word))
         page = response.read().decode('utf-8')
         parser = GlossParser()
@@ -59,7 +60,7 @@ def print_glosses(glosses):
     """Print a list of definitions in a nice format."""
 
     if not glosses:
-        print("Not defined.")
+        print("Not defined.", file=sys.stderr)
         return
     for (n, gloss) in enumerate(glosses):
         print("{num}. {gloss}\n".format(num=n,
