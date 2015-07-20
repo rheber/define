@@ -101,12 +101,14 @@ class DeleteAction(Action):
             glossary.pop(values, None)
 
 if __name__ == "__main__":
-    parser = ArgumentParser(description="Look up the meanings of a word")
-    group = parser.add_mutually_exclusive_group()
+    parser = ArgumentParser(description="Look up the meanings of a word",
+                            add_help=False)
+    group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("-c", "--clear", help="clear the given key if present",
             metavar="KEY", action=DeleteAction)
     group.add_argument("-d", "--define", help="try to define the given key",
             metavar="KEY", action=DefineAction)
+    group.add_argument("-h", "--help", action='help')
     group.add_argument("-k", "--keys", help="list all stored keys",
             action=KeysAction, nargs=0)
     group.add_argument("-l", "--lexemes",
