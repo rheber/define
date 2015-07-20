@@ -100,12 +100,19 @@ class DeleteAction(Action):
         with closing(shelve.open("glossary")) as glossary:
             glossary.pop(values, None)
 
+class DeleteAllAction(Action):
+    def __call__(self, parser, namespace, values, option_string):
+        with closing(shelve.open("glossary")) as glossary:
+            glossary.clear()
+
 if __name__ == "__main__":
     parser = ArgumentParser(description="Look up the meanings of a word",
                             add_help=False)
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("-c", "--clear", help="clear the given key if present",
             metavar="KEY", action=DeleteAction)
+    group.add_argument("--clearall", help="clear all stored keys",
+            action=DeleteAllAction, nargs=0)
     group.add_argument("-d", "--define", help="try to define the given key",
             metavar="KEY", action=DefineAction)
     group.add_argument("-h", "--help", action='help')
