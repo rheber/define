@@ -103,18 +103,19 @@ class DeleteAction(Action):
 if __name__ == "__main__":
     parser = ArgumentParser(description="Look up the meanings of a word")
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("-d", "--define", help="try to define the given word",
-                        action=DefineAction)
     group.add_argument("-c", "--clear", help="clear the given key if present",
-                        action=DeleteAction)
+            metavar="KEY", action=DeleteAction)
+    group.add_argument("-d", "--define", help="try to define the given key",
+            metavar="KEY", action=DefineAction)
     group.add_argument("-k", "--keys", help="list all stored keys",
-                        action=KeysAction, nargs=0)
+            action=KeysAction, nargs=0)
     group.add_argument("-l", "--lexemes",
-                        help="list all stored keys which have definitions",
-                        action=LexemesAction, nargs=0)
-    group.add_argument("-o", "--override", help="override stored definitions",
-                        action=OverrideAction)
-    group.add_argument("-v", "--version", action="version",
-                        version="define v0.1")
+            help="list all stored keys which have definitions",
+            action=LexemesAction, nargs=0)
+    group.add_argument("-o", "--override",
+            help="try to define the given key, overriding any stored definitions",
+            metavar="KEY", action=OverrideAction)
+    group.add_argument("-v", "--version",
+            action="version", version="define v0.1")
     args = parser.parse_args()
 
