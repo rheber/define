@@ -81,14 +81,12 @@ class DefineAction(Action):
 class OverrideAction(Action):
     def __call__(self, parser, namespace, values, option_string):
         define(values, override=True)
-        sys.exit()
 
 class KeysAction(Action):
     def __call__(self, parser, namespace, values, option_string):
         with closing(shelve.open("glossary")) as glossary:
             for key in sorted(glossary):
                 print(key)
-        sys.exit()
 
 class LexemesAction(Action):
     def __call__(self, parser, namespace, values, option_string):
@@ -96,28 +94,27 @@ class LexemesAction(Action):
             for key in sorted(glossary):
                 if(glossary[key]):
                     print(key)
-        sys.exit()
 
 class DeleteAction(Action):
     def __call__(self, parser, namespace, values, option_string):
         with closing(shelve.open("glossary")) as glossary:
             glossary.pop(values, None)
-        sys.exit()
 
 if __name__ == "__main__":
     parser = ArgumentParser(description="Look up the meanings of a word")
-    parser.add_argument("word", help="the word to be defined",
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("-d", "--define", help="try to define the given word",
                         action=DefineAction)
-    parser.add_argument("-d", "--delete", help="delete the given key if present",
+    group.add_argument("-c", "--clear", help="clear the given key if present",
                         action=DeleteAction)
-    parser.add_argument("-k", "--keys", help="list all stored keys",
+    group.add_argument("-k", "--keys", help="list all stored keys",
                         action=KeysAction, nargs=0)
-    parser.add_argument("-l", "--lexemes",
+    group.add_argument("-l", "--lexemes",
                         help="list all stored keys which have definitions",
                         action=LexemesAction, nargs=0)
-    parser.add_argument("-o", "--override", help="override stored definitions",
+    group.add_argument("-o", "--override", help="override stored definitions",
                         action=OverrideAction)
-    parser.add_argument("-v", "--version", action="version",
+    group.add_argument("-v", "--version", action="version",
                         version="define v0.1")
     args = parser.parse_args()
 
