@@ -7,6 +7,8 @@ from urllib.request import urlopen, URLError
 
 URL = "http://dictionary.reference.com/browse/{word}?s=t"
 DEFINED = True # Indicates whether a lexeme has definitions.
+AUDIO_CLASS = "audio-wrapper" # When you know you've gone too far.
+CLOSEST_CLASS = "closest-result"
 DEFINITION_CLASS = "def-content"
 
 def fatal_error(msg):
@@ -20,6 +22,8 @@ class GlossParser(HTMLParser):
         self.strict = False
         self.reset()
         self.depth = 0
+        self.closest = ""
+        self.found_closest = False
         self.gloss_start = False
         self.glosses = []
 
@@ -27,6 +31,11 @@ class GlossParser(HTMLParser):
         if ("class", DEFINITION_CLASS) in attrs:
             self.depth += 1
             self.gloss_start = True
+        elif ("class", CLOSEST_CLASS) in attrs:
+            self.depth += 1
+            self.found_closest = True
+        elif ("class", AUDIO_CLASS) in attrs:
+            self.depth = 0
         elif self.depth:
             self.depth += 1
 
@@ -39,8 +48,10 @@ class GlossParser(HTMLParser):
             if self.gloss_start:
                 self.glosses.append(data.strip("\n"))
                 self.gloss_start = False
-            else:
+            elif self.glosses:
                 self.glosses[-1] += data.strip("\n")
+            elif self.found_closest:
+                self.closest += data.strip("\n")
 
 def glosses(word):
     """Fetch the definitions of a word. Returns a list."""
@@ -51,19 +62,19 @@ def glosses(word):
         page = response.read().decode('utf-8')
         parser = GlossParser()
         parser.feed(page)
-        return parser.glosses
+        return (parser.glosses, parser.closest)
     except URLError:
         fatal_error("Error: Couldn't access site")
     except UnicodeEncodeError:
         fatal_error("Error: Can't look that up")
 
-def print_glosses(glosses):
-    """Print a list of definitions in a nice format."""
+def print_glosses(tup):
+    """Print a formatted list of definitions or an alternative for a typo."""
 
-    if not glosses:
-        print("Not defined.", file=sys.stderr)
+    if not tup[0]: # tup[1] is a suggestion
+        print("Not defined. {closest}".format(closest=tup[1]), file=sys.stderr)
         return
-    for (n, gloss) in enumerate(glosses):
+    for (n, gloss) in enumerate(tup[1]): # tup[1] is a gloss list
         print("{num}. {gloss}\n".format(num=n,
                 gloss=gloss.encode(errors='replace')))
 
@@ -72,9 +83,9 @@ def define(word, override=False):
 
     with closing(shelve.open("glossary")) as glossary:
         if word not in glossary or override:
-            g = glosses(word)
-            glossary[word] = (DEFINED if g else not DEFINED, g)
-        print_glosses(glossary[word][1])
+            g, c = glosses(word)
+            glossary[word] = (DEFINED if g else not DEFINED, g if g else c)
+        print_glosses(glossary[word])
 
 class DefineAction(Action):
     def __call__(self, parser, namespace, values, option_string):
@@ -89,7 +100,7 @@ class SuggestionsAction(Action):
         with closing(shelve.open("glossary")) as glossary:
             for key in sorted(glossary):
                 if(not glossary[key][0]):
-                    print(key)
+                    print("{0}\t{1}".format(key, glossary[key][1]))
 
 class LexemesAction(Action):
     def __call__(self, parser, namespace, values, option_string):
