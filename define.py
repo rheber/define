@@ -6,6 +6,7 @@ import sys
 from urllib.request import urlopen, URLError
 
 URL = "http://dictionary.reference.com/browse/{word}?s=t"
+DEFINED = True # Indicates whether a lexeme has definitions.
 DEFINITION_CLASS = "def-content"
 
 def fatal_error(msg):
@@ -42,7 +43,7 @@ class GlossParser(HTMLParser):
                 self.glosses[-1] += data.strip("\n")
 
 def glosses(word):
-    """Fetch the definitions of a word."""
+    """Fetch the definitions of a word. Returns a list."""
 
     try:
         print("Fetching definitions...", file=sys.stderr)
@@ -71,8 +72,9 @@ def define(word, override=False):
 
     with closing(shelve.open("glossary")) as glossary:
         if word not in glossary or override:
-            glossary[word] = glosses(word)
-        print_glosses(glossary[word])
+            g = glosses(word)
+            glossary[word] = (DEFINED if g else not DEFINED, g)
+        print_glosses(glossary[word][1])
 
 class DefineAction(Action):
     def __call__(self, parser, namespace, values, option_string):
@@ -82,17 +84,18 @@ class OverrideAction(Action):
     def __call__(self, parser, namespace, values, option_string):
         define(values, override=True)
 
-class KeysAction(Action):
+class SuggestionsAction(Action):
     def __call__(self, parser, namespace, values, option_string):
         with closing(shelve.open("glossary")) as glossary:
             for key in sorted(glossary):
-                print(key)
+                if(not glossary[key][0]):
+                    print(key)
 
 class LexemesAction(Action):
     def __call__(self, parser, namespace, values, option_string):
         with closing(shelve.open("glossary")) as glossary:
             for key in sorted(glossary):
-                if(glossary[key]):
+                if(glossary[key][0]):
                     print(key)
 
 class DeleteAction(Action):
@@ -116,8 +119,9 @@ if __name__ == "__main__":
     group.add_argument("-d", "--define", help="try to define the given key",
             metavar="KEY", action=DefineAction)
     group.add_argument("-h", "--help", action='help')
-    group.add_argument("-k", "--keys", help="list all stored keys",
-            action=KeysAction, nargs=0)
+    group.add_argument("-s", "--suggestions",
+            help="list all stored keys which are not defined",
+            action=SuggestionsAction, nargs=0)
     group.add_argument("-l", "--lexemes",
             help="list all stored keys which have definitions",
             action=LexemesAction, nargs=0)
