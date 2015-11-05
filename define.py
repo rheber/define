@@ -5,10 +5,8 @@ import shelve
 import sys
 from urllib.request import urlopen, URLError
 
-URL = "http://dictionary.reference.com/browse/{word}?s=t"
-DEFINED = True # Indicates whether a lexeme has definitions.
+URL = "http://dictionary.reference.com/browse/{word}"
 AUDIO_CLASS = "audio-wrapper" # When you know you've gone too far.
-CLOSEST_CLASS = "closest-result"
 DEFINITION_CLASS = "def-content"
 
 def fatal_error(msg):
@@ -22,8 +20,6 @@ class GlossParser(HTMLParser):
         self.strict = False
         self.reset()
         self.depth = 0
-        self.closest = ""
-        self.found_closest = False
         self.gloss_start = False
         self.glosses = []
 
@@ -31,9 +27,6 @@ class GlossParser(HTMLParser):
         if ("class", DEFINITION_CLASS) in attrs:
             self.depth += 1
             self.gloss_start = True
-        elif ("class", CLOSEST_CLASS) in attrs:
-            self.depth += 1
-            self.found_closest = True
         elif ("class", AUDIO_CLASS) in attrs:
             self.depth = 0
         elif self.depth:
@@ -50,8 +43,6 @@ class GlossParser(HTMLParser):
                 self.gloss_start = False
             elif self.glosses:
                 self.glosses[-1] += data.strip("\n")
-            elif self.found_closest:
-                self.closest += data.strip("\n")
 
 def glosses(word):
     """Fetch the definitions of a word. Returns a list."""
@@ -62,29 +53,29 @@ def glosses(word):
         page = response.read().decode('utf-8')
         parser = GlossParser()
         parser.feed(page)
-        return (parser.glosses, parser.closest)
+        return parser.glosses
     except URLError:
         fatal_error("Error: Couldn't access site")
     except UnicodeEncodeError:
         fatal_error("Error: Can't look that up")
 
 def print_glosses(tup):
-    """Print a formatted list of definitions or an alternative for a typo."""
+  """Print a formatted list of definitions."""
 
-    if not tup[0]: # tup[1] is a suggestion
-        print("Not defined. {closest}".format(closest=tup[1]), file=sys.stderr)
-        return
-    for (n, gloss) in enumerate(tup[1]): # tup[1] is a gloss list
-        print("{num}. {gloss}\n".format(num=n,
-                gloss=gloss.encode(errors='replace')))
+  if tup == "Not defined.":
+    print("Not defined.")
+    return
+  for (n, gloss) in enumerate(tup): # tup is a gloss list
+    print("{num}. {gloss}\n".format(num=n,
+        gloss=gloss.encode(errors='replace')))
 
 def define(word, override=False):
     """Print the definitions of a word, fetching them if necessary."""
 
     with closing(shelve.open("glossary")) as glossary:
         if word not in glossary or override:
-            g, c = glosses(word)
-            glossary[word] = (DEFINED if g else not DEFINED, g if g else c)
+            g = glosses(word)
+            glossary[word] = g if g else "Not defined."
         print_glosses(glossary[word])
 
 class DefineAction(Action):
@@ -95,18 +86,18 @@ class OverrideAction(Action):
     def __call__(self, parser, namespace, values, option_string):
         define(values, override=True)
 
-class SuggestionsAction(Action):
+class NonlexemesAction(Action):
     def __call__(self, parser, namespace, values, option_string):
         with closing(shelve.open("glossary")) as glossary:
             for key in sorted(glossary):
-                if(not glossary[key][0]):
-                    print("{0}\t{1}".format(key, glossary[key][1]))
+                if(glossary[key] == "Not defined."):
+                    print(key)
 
 class LexemesAction(Action):
     def __call__(self, parser, namespace, values, option_string):
         with closing(shelve.open("glossary")) as glossary:
             for key in sorted(glossary):
-                if(glossary[key][0]):
+                if(glossary[key] != "Not defined."):
                     print(key)
 
 class DeleteAction(Action):
@@ -130,12 +121,12 @@ if __name__ == "__main__":
     group.add_argument("-d", "--define", help="try to define the given key",
             metavar="KEY", action=DefineAction)
     group.add_argument("-h", "--help", action='help')
-    group.add_argument("-s", "--suggestions",
-            help="list all stored keys which are not defined",
-            action=SuggestionsAction, nargs=0)
     group.add_argument("-l", "--lexemes",
             help="list all stored keys which have definitions",
             action=LexemesAction, nargs=0)
+    group.add_argument("-n", "--nonlexemes",
+            help="list all stored keys which are not defined",
+            action=NonlexemesAction, nargs=0)
     group.add_argument("-o", "--override",
             help="try to define the given key, overriding any stored definitions",
             metavar="KEY", action=OverrideAction)
