@@ -10,10 +10,10 @@ AUDIO_CLASS = "audio-wrapper" # When you know you've gone too far.
 DEFINITION_CLASS = "def-content"
 
 def fatal_error(msg):
-    """"Print error message and exit."""
+  """"Print error message and exit."""
 
-    print(msg, file=sys.stderr)
-    exit(1)
+  print(msg, file=sys.stderr)
+  exit(1)
 
 class GlossParser(HTMLParser):
     def __init__(self):
@@ -78,13 +78,18 @@ def define(word, override=False):
             glossary[word] = g if g else "Not defined."
         print_glosses(glossary[word])
 
+def cleanse(values):
+  """Turn values from the command line into a definable word."""
+
+  return values.replace(" ", "-")
+
 class DefineAction(Action):
     def __call__(self, parser, namespace, values, option_string):
-        define(values)
+        define(cleanse(values))
 
 class OverrideAction(Action):
     def __call__(self, parser, namespace, values, option_string):
-        define(values, override=True)
+        define(cleanse(values), override=True)
 
 class NonlexemesAction(Action):
     def __call__(self, parser, namespace, values, option_string):
@@ -103,7 +108,7 @@ class LexemesAction(Action):
 class DeleteAction(Action):
     def __call__(self, parser, namespace, values, option_string):
         with closing(shelve.open("glossary")) as glossary:
-            glossary.pop(values, None)
+            glossary.pop(cleanse(values), None)
 
 class DeleteAllAction(Action):
     def __call__(self, parser, namespace, values, option_string):
